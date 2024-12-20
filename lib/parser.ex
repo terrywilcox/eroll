@@ -82,32 +82,34 @@ defmodule Eroll.Parser do
 
   lparen = ascii_char([?(]) |> label("(")
   rparen = ascii_char([?)]) |> label(")")
-#  whitespace = ascii_char([?\s, ?\t]) |> times(min: 1)
+  whitespace = ascii_char([?\s, ?\t]) |> times(min: 1)
 
   defcombinatorp(
-    :add_expr_factor,
-      [ignore(lparen) |> parsec(:add_expr) |> ignore(rparen),
+    :math_expr_factor,
+      optional(ignore(whitespace)) |>
+      concat( [ignore(lparen) |> parsec(:math_expr) |> ignore(rparen),
        roll,
        const
-      ] |> choice()
+      ] |> choice()) |>
+      concat(optional(ignore(whitespace)))
   )
 
   defparsecp(
-    :add_expr_term,
-      parsec(:add_expr_factor)
+    :math_expr_term,
+      parsec(:math_expr_factor)
       |> repeat([multiply, divide]
         |> choice()
-        |> parsec(:add_expr_factor)
+        |> parsec(:math_expr_factor)
       )
       |> reduce(:fold_infixl)
     )
 
   defparsec(
-    :add_expr,
-      parsec(:add_expr_term)
+    :math_expr,
+      parsec(:math_expr_term)
       |> repeat([add, subtract]
         |> choice()
-        |> parsec(:add_expr_term))
+        |> parsec(:math_expr_term))
       |> reduce(:fold_infixl)
     )
 
@@ -153,7 +155,7 @@ defmodule Eroll.Parser do
   defparsec :roll, roll, debug: true
 
   def parse(roll) do
-    case add_expr(roll) do
+    case math_expr(roll) do
       {:ok, result, _, _, _, _} ->
         result
       {:error, _} -> {:error, "parse error"}

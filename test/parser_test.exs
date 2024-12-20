@@ -53,17 +53,22 @@ defmodule Eroll.ParserTest do
 
   test "parse a roll with addition" do
     roll = "(2d12+1)"
-    assert {:ok, [{"add", [{"roll", [2, 12]}, 1]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.add_expr(roll)
+    assert {:ok, [{"add", [{"roll", [2, 12]}, 1]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.math_expr(roll)
+  end
+
+  test "parse a roll with whitespace" do
+    roll = "(2d12 +   \t1)"
+    assert {:ok, [{"add", [{"roll", [2, 12]}, 1]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.math_expr(roll)
   end
 
   test "parse a roll with variable" do
     roll = "(2d12+${ed})"
-    assert {:ok, [{"add", [{"roll", [2, 12]}, {"variable", ["ed"]}]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.add_expr(roll)
+    assert {:ok, [{"add", [{"roll", [2, 12]}, {"variable", ["ed"]}]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.math_expr(roll)
   end
 
   test "parse a roll with variable number of dice and sides" do
     roll = "${dice}d${sides}"
-    assert {:ok, [{"roll", [{"variable", ["dice"]}, {"variable", ["sides"]}]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.add_expr(roll)
+    assert {:ok, [{"roll", [{"variable", ["dice"]}, {"variable", ["sides"]}]}], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.math_expr(roll)
   end
 
 end
