@@ -6,7 +6,8 @@ defmodule Eroll.Evaluator do
 
   def evaluate(roll, context) do
     case eval(roll, context) do
-      %{rolls: rolls} -> sum(rolls)
+      roll when is_map(roll) -> sum(roll)
+      rolls when is_list(rolls) -> sum(rolls)
       x -> x
     end
   end
@@ -22,21 +23,22 @@ defmodule Eroll.Evaluator do
   def eval({"roll", [n, s]}, context) do
     number_of_dice = eval(n, context)
     dice_sides = eval(s, context)
-    rolls = roll_dice(number_of_dice, dice_sides)
+    rolls = roll_dice(number_of_dice, dice_sides, context)
     %{number_of_dice: number_of_dice,
       dice_sides: dice_sides,
-      rolls: rolls}
+      rolls: rolls,
+      successes: false}
   end
 
   def eval({"explode", [roll, target]}, context) do
     rolls = eval(roll, context)
-    explode(rolls, target)
+    explode(rolls, target, context)
   end
 
   def eval({"explode", roll}, context) do
     rolls = eval(roll, context)
     target = rolls.dice_sides
-    explode(rolls, target)
+    explode(rolls, target, context)
   end
 
   def eval({cmd, [roll, h_or_l, n]}, context) when cmd == "keep" or cmd == "drop"  do
@@ -98,20 +100,20 @@ defmodule Eroll.Evaluator do
     x
   end
 
-  defp roll_dice(number_of_dice, dice_sides) do
-    for n <- 1..number_of_dice, do: {n, random(dice_sides), "keep"}
+  defp roll_dice(number_of_dice, dice_sides, context) do
+    for n <- 1..number_of_dice, do: {n, random(dice_sides, context), "keep"}
   end
 
   defp count_exploders(rolls, target) do
     Enum.count(rolls, fn {_, value, keep} -> value == target and keep == "keep" end)
   end
 
-  defp explode(roll, target) do
+  defp explode(roll, target, context) do
     initial_rolls = roll.rolls
     sides = roll.dice_sides
 
     number_of_explosions = count_exploders(initial_rolls, target)
-    exploded_rolls = explode(number_of_explosions, target, sides, initial_rolls)
+    exploded_rolls = explode(number_of_explosions, target, sides, initial_rolls, context)
     reindex_rolls = exploded_rolls
       |> Enum.with_index(1)
       |> Enum.map(fn {{_, value, keep}, index} -> {index, value, keep} end)
@@ -119,14 +121,14 @@ defmodule Eroll.Evaluator do
     %{roll | rolls: reindex_rolls}
   end
 
-  defp explode(0, _target, _sides, acc) do
+  defp explode(0, _target, _sides, acc, _context) do
     acc
   end
 
-  defp explode(number_of_explosions, target, sides, acc) do
-    rolls_from_explosions = roll_dice(number_of_explosions, sides)
+  defp explode(number_of_explosions, target, sides, acc, context) do
+    rolls_from_explosions = roll_dice(number_of_explosions, sides, context)
     number_exploders = count_exploders(rolls_from_explosions, target)
-    explode(number_exploders, target, sides, acc ++ rolls_from_explosions)
+    explode(number_exploders, target, sides, acc ++ rolls_from_explosions, context)
   end
 
   defp keep(roll, keep_or_drop, high_or_low, number) do
@@ -174,11 +176,18 @@ defmodule Eroll.Evaluator do
       |> Enum.sum
   end
 
-  defp sum(%{} = roll) do
-    sum(roll.rolls)
+  defp sum(roll) when is_map(roll) do
+    case roll.successes do
+      false -> sum(roll.rolls)
+      x -> x
+    end
   end
 
-  defp random(n) do
+  defp random(n, %{random_fn: random_fn}) do
+    random_fn.(n)
+  end
+
+  defp random(n, _context) do
     :rand.uniform(n)
   end
 
