@@ -1,5 +1,4 @@
 defmodule Eroll.Evaluator do
-
   def evaluate(roll) do
     evaluate(roll, %{})
   end
@@ -24,10 +23,7 @@ defmodule Eroll.Evaluator do
     number_of_dice = eval(n, context)
     dice_sides = eval(s, context)
     rolls = roll_dice(number_of_dice, dice_sides, context)
-    %{number_of_dice: number_of_dice,
-      dice_sides: dice_sides,
-      rolls: rolls,
-      successes: false}
+    %{number_of_dice: number_of_dice, dice_sides: dice_sides, rolls: rolls, successes: false}
   end
 
   def eval({"explode", [roll, target]}, context) do
@@ -41,12 +37,12 @@ defmodule Eroll.Evaluator do
     explode(rolls, target, context)
   end
 
-  def eval({cmd, [roll, h_or_l, n]}, context) when cmd == "keep" or cmd == "drop"  do
+  def eval({cmd, [roll, h_or_l, n]}, context) when cmd == "keep" or cmd == "drop" do
     rolls = eval(roll, context)
     keep(rolls, cmd, h_or_l, n)
   end
 
-  def eval({cmd, [roll, n]}, context) when is_integer(n) and cmd == "keep" or cmd == "drop" do
+  def eval({cmd, [roll, n]}, context) when (is_integer(n) and cmd == "keep") or cmd == "drop" do
     eval({cmd, [roll, "highest", n]}, context)
   end
 
@@ -114,7 +110,9 @@ defmodule Eroll.Evaluator do
 
     number_of_explosions = count_exploders(initial_rolls, target)
     exploded_rolls = explode(number_of_explosions, target, sides, initial_rolls, context)
-    reindex_rolls = exploded_rolls
+
+    reindex_rolls =
+      exploded_rolls
       |> Enum.with_index(1)
       |> Enum.map(fn {{_, value, keep}, index} -> {index, value, keep} end)
 
@@ -134,10 +132,11 @@ defmodule Eroll.Evaluator do
   defp keep(roll, keep_or_drop, high_or_low, number) do
     existing_rolls = roll.rolls
 
-    sorted_rolls = case high_or_low do
-      "highest" -> Enum.sort_by(existing_rolls, fn {_, value, _} -> value end, :desc)
-      "lowest" -> Enum.sort_by(existing_rolls, fn {_, value, _} -> value end)
-    end
+    sorted_rolls =
+      case high_or_low do
+        "highest" -> Enum.sort_by(existing_rolls, fn {_, value, _} -> value end, :desc)
+        "lowest" -> Enum.sort_by(existing_rolls, fn {_, value, _} -> value end)
+      end
 
     {affected, unaffected} = Enum.split(sorted_rolls, number)
 
@@ -147,21 +146,26 @@ defmodule Eroll.Evaluator do
         "drop" -> {unaffected, affected}
       end
 
-    to_drop = Enum.map(drop, fn{index, value, _} -> {index, value, "drop"} end)
+    to_drop = Enum.map(drop, fn {index, value, _} -> {index, value, "drop"} end)
 
-    new_rolls = keep ++ to_drop
+    new_rolls =
+      (keep ++ to_drop)
       |> Enum.sort_by(fn {index, _, _} -> index end)
 
-    %{roll | rolls: new_rolls} 
+    %{roll | rolls: new_rolls}
   end
 
   defp target_gt(roll, target) do
-    successes = Enum.count(roll.rolls, fn {_, value, keep} -> value >= target and keep == "keep" end)
+    successes =
+      Enum.count(roll.rolls, fn {_, value, keep} -> value >= target and keep == "keep" end)
+
     Map.put(roll, :successes, successes)
   end
 
   defp target_lt(roll, target) do
-    successes = Enum.count(roll.rolls, fn {_, value, keep} -> value <= target and keep == "keep" end)
+    successes =
+      Enum.count(roll.rolls, fn {_, value, keep} -> value <= target and keep == "keep" end)
+
     Map.put(roll, :successes, successes)
   end
 
@@ -171,9 +175,9 @@ defmodule Eroll.Evaluator do
 
   defp sum(rolls) when is_list(rolls) do
     rolls
-      |> Enum.filter(fn {_, _, keep} -> keep == "keep" end)
-      |> Enum.map(fn {_, value, _} -> value end)
-      |> Enum.sum
+    |> Enum.filter(fn {_, _, keep} -> keep == "keep" end)
+    |> Enum.map(fn {_, value, _} -> value end)
+    |> Enum.sum()
   end
 
   defp sum(roll) when is_map(roll) do
@@ -190,5 +194,4 @@ defmodule Eroll.Evaluator do
   defp random(n, _context) do
     :rand.uniform(n)
   end
-
 end

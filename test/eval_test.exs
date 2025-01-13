@@ -8,7 +8,7 @@ defmodule Eroll.EvaluateTest do
   end
 
   def next_item do
-    Agent.get_and_update(__MODULE__, fn [head | tail]  -> {head, tail} end)
+    Agent.get_and_update(__MODULE__, fn [head | tail] -> {head, tail} end)
   end
 
   @tag roll_list: [3, 5, 2]
@@ -89,7 +89,4 @@ defmodule Eroll.EvaluateTest do
     context = %{"dice" => 2, "sides" => 6, random_fn: random_fn}
     assert 8 == Eroll.Evaluator.evaluate(roll, context)
   end
-
 end
-
-
