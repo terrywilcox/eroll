@@ -72,6 +72,16 @@ defmodule Eroll.ParserTest do
             "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.roll(roll)
   end
 
+  test "parse a complex roll equation" do
+    roll = "2d12 + 4d6kh3 - 1"
+
+    assert {:ok,
+            [
+              {"subtract",
+               [{"add", [{"roll", [2, 12]}, {"keep", [{"roll", [4, 6]}, "highest", 3]}]}, 1]}
+            ], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.math_expr(roll)
+  end
+
   test "parse a roll with addition" do
     roll = "(2d12+1)"
 
