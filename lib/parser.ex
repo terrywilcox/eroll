@@ -5,7 +5,10 @@ defmodule Eroll.Parser do
   pos_int = integer(min: 1)
 
   # any integer
-  int = optional(ascii_char([?-])) |> concat(integer(min: 1))
+  int =
+    optional(ascii_char([?-]))
+    |> concat(integer(min: 1))
+    |> reduce(:int_value)
 
   # a variable of the form ${[a-zA-Z_]+}
   variable =
@@ -15,11 +18,21 @@ defmodule Eroll.Parser do
     |> concat(ascii_char([?}]))
     |> reduce(:variable)
 
-  # dice values are positive integers
-  dice_value = [variable, pos_int] |> choice()
-
   # numbers or variables?
   const = [variable, int] |> choice()
+
+  # roll values are positive integers or variables
+  roll_value = [variable, pos_int] |> choice()
+
+  roll_d =
+    ascii_char([?d, ?D])
+    |> replace("roll")
+
+  dice =
+    optional(roll_value)
+    |> concat(roll_d)
+    |> concat(roll_value)
+    |> reduce(:group)
 
   # handle the keep/drop highest/lowest stuff, all optional
   # kh3, kl3, dh3, dl3 or just k3 which is implicitly highest
@@ -45,48 +58,35 @@ defmodule Eroll.Parser do
       [keep, drop]
       |> choice()
       |> concat(optional(choice([highest, lowest])))
-      |> concat(optional(dice_value))
+      |> concat(optional(roll_value))
       |> reduce(:group)
     )
-
-  roll_d =
-    ascii_char([?d, ?D])
-    |> replace("roll")
 
   explode =
     optional(
       ascii_char([?!])
       |> replace("explode")
-      |> concat(optional(dice_value))
+      |> concat(optional(roll_value))
       |> reduce(:group)
     )
 
   target_gt =
     ascii_char([?>])
     |> replace("target_gt")
-    |> concat(dice_value)
+    |> concat(roll_value)
 
   target_lt =
     ascii_char([?<])
     |> replace("target_lt")
-    |> concat(dice_value)
+    |> concat(roll_value)
 
-  target = optional([target_gt, target_lt] |> choice() |> reduce(:group))
+  target_number = optional([target_gt, target_lt] |> choice() |> reduce(:group))
 
-  # this can be a variable or an expression
-  dice =
-    optional(dice_value)
-    |> concat(roll_d)
-    # this can be a variable or expression
-    |> concat(dice_value)
-    |> reduce(:group)
-
-  # this can be a variable or an expression
   roll =
     dice
     |> concat(explode)
     |> concat(keep_term)
-    |> concat(target)
+    |> concat(target_number)
     |> reduce(:postfix)
 
   # operators
@@ -141,6 +141,10 @@ defmodule Eroll.Parser do
 
   defp variable([?$, ?{, name, ?}]) do
     {"variable", [name]}
+  end
+
+  defp int_value([value]) do
+    {"integer", [value]}
   end
 
   defp fold_infixl(acc) do

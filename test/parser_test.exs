@@ -78,21 +78,21 @@ defmodule Eroll.ParserTest do
     assert {:ok,
             [
               {"subtract",
-               [{"add", [{"roll", [2, 12]}, {"keep", [{"roll", [4, 6]}, "highest", 3]}]}, 1]}
+               [{"add", [{"roll", [2, 12]}, {"keep", [{"roll", [4, 6]}, "highest", 3]}]}, {"integer", [1]}]}
             ], "", %{}, {1, 0}, String.length(roll)} == Eroll.Parser.math_expr(roll)
   end
 
   test "parse a roll with addition" do
     roll = "(2d12+1)"
 
-    assert {:ok, [{"add", [{"roll", [2, 12]}, 1]}], "", %{}, {1, 0}, String.length(roll)} ==
+    assert {:ok, [{"add", [{"roll", [2, 12]}, {"integer", [1]}]}], "", %{}, {1, 0}, String.length(roll)} ==
              Eroll.Parser.math_expr(roll)
   end
 
   test "parse a roll with whitespace" do
     roll = "(2d12 +   \t1)"
 
-    assert {:ok, [{"add", [{"roll", [2, 12]}, 1]}], "", %{}, {1, 0}, String.length(roll)} ==
+    assert {:ok, [{"add", [{"roll", [2, 12]}, {"integer", [1]}]}], "", %{}, {1, 0}, String.length(roll)} ==
              Eroll.Parser.math_expr(roll)
   end
 
