@@ -69,6 +69,30 @@ defmodule ErollTest do
     assert 9 == Eroll.roll(roll, context)
   end
 
+  @tag roll_list: [3, 5, 2, 2, 4]
+  test "evaluate a roll with addition and multiplication", context do
+    roll = "2d12 + 3 * 3d4"
+    assert 32 == Eroll.roll(roll, context)
+  end
+
+  @tag roll_list: [10, 8, 2, 2, 4]
+  test "evaluate a roll with brackets", context do
+    roll = "(2d12 - 2) / 3d4"
+    assert 2 == Eroll.roll(roll, context)
+  end
+
+  @tag roll_list: [10, 6, 2, 2, 4]
+  test "evaluate a roll with unneeded brackets", context do
+    roll = "(2d12) / (3d4)"
+    assert 2 == Eroll.roll(roll, context)
+  end
+
+  @tag roll_list: [10, 8, 2, 2, 4]
+  test "evaluate a roll with nested brackets", context do
+    roll = "(2d12 - (1 + 1)) / 3d4"
+    assert 2 == Eroll.roll(roll, context)
+  end
+
   @tag roll_list: [3, 5]
   test "evaluate a roll with variable", context do
     roll = "2d12 + ${ed}"
