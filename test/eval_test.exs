@@ -90,7 +90,7 @@ defmodule Eroll.EvaluateTest do
   test "evaluate a roll with variable number of dice and sides and lookup function", context do
     roll = [{"roll", [{"variable", ["dice"]}, {"variable", ["sides"]}]}]
     lookup_context = %{"dice" => 2, "sides" => 6}
-    lookup_function = fn _, variable_name, default -> Map.get(lookup_context, variable_name, default) end
+    lookup_function = fn variable_name -> Map.get(lookup_context, variable_name, variable_name) end
     new_context = Map.merge(%{"lookup_function" => lookup_function}, context)
     assert 8 == Eroll.Evaluator.evaluate(roll, new_context)
   end

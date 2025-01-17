@@ -87,8 +87,8 @@ defmodule Eroll.Evaluator do
   end
 
   defp eval({"variable", [v]}, context) do
-    lookup_function = Map.get(context, "lookup_function", &Map.get/3)
-    value = lookup_function.(context, v, 0)
+    lookup_function = Map.get(context, "lookup_function", fn(v) -> Map.get(context, v, v) end)
+    value = lookup_function.(v)
     %Evaluator{value: value, rolls: value}
   end
 
