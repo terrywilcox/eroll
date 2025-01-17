@@ -7,11 +7,11 @@ defmodule Eroll.Evaluator do
   end
 
   def evaluate(roll, context) do
-    case eval(roll, context) do
-      eval_roll when is_map(eval_roll) ->
-        sum(eval_roll)
-      any ->
-        any
+    %Evaluator{value: value, description: description} = eval(roll, context)
+    case Map.get(context, :debug) do
+      nil -> value
+      _ ->
+        {value, description} 
     end
   end
 
@@ -24,7 +24,7 @@ defmodule Eroll.Evaluator do
     dice_sides = value(eval(s, context))
 
     rolls = roll_dice(number_of_dice, dice_sides, context)
-    value = sum(rolls)
+    value = sum_rolls(rolls)
     description = "#{number_of_dice}d#{dice_sides}"
 
     %Evaluator{
@@ -78,39 +78,47 @@ defmodule Eroll.Evaluator do
   end
 
   defp eval({"add", [l, r]}, context) do
-    left = eval(l, context)
-    right = eval(r, context)
-    sum(left) + sum(right)
+    {left_value, left_description} = extract(eval(l, context))
+    {right_value, right_description} = extract(eval(r, context))
+    %Evaluator{value: left_value+right_value, description: "#{left_description}+#{right_description}"}
   end
 
   defp eval({"subtract", [l, r]}, context) do
-    left = eval(l, context)
-    right = eval(r, context)
-    sum(left) - sum(right)
+    {left_value, left_description} = extract(eval(l, context))
+    {right_value, right_description} = extract(eval(r, context))
+    %Evaluator{value: left_value-right_value, description: "#{left_description}-#{right_description}"}
   end
 
   defp eval({"multiply", [l, r]}, context) do
-    left = eval(l, context)
-    right = eval(r, context)
-    sum(left) * sum(right)
+    {left_value, left_description} = extract(eval(l, context))
+    {right_value, right_description} = extract(eval(r, context))
+    %Evaluator{value: left_value*right_value, description: "#{left_description}*#{right_description}"}
   end
 
   defp eval({"divide", [l, r]}, context) do
-    left = eval(l, context)
-    right = eval(r, context)
-    sum(left) / sum(right)
+    {left_value, left_description} = extract(eval(l, context))
+    {right_value, right_description} = extract(eval(r, context))
+    %Evaluator{value: left_value/right_value, description: "#{left_description}/#{right_description}"}
   end
 
   defp eval({"variable", [v]}, context) do
-    %Evaluator{value: Map.get(context, v, 0), description: "variable #{v}"}
+    value = Map.get(context, v, 0)
+    %Evaluator{value: value, description: "#{v}=#{value}"}
   end
 
   defp eval({"integer", [v]}, _context) do
-    v
+    %Evaluator{value: v, description: "#{v}"}
   end
 
-  defp eval(x, _context) do
-    x
+  defp eval(x, _context) when is_integer(x) do
+    %Evaluator{value: x, description: "#{x}"}
+  end
+
+  defp extract(%Evaluator{value: value, description: description, rolls: rolls}) do
+    case rolls do
+      [] -> {value, description}
+      _ -> {value, "#{description} = #{Enum.map(rolls, fn {_, value, _} -> value end) |> Enum.join(", ")}"}
+    end
   end
 
   defp roll_dice(number_of_dice, dice_sides, context) do
@@ -128,8 +136,8 @@ defmodule Eroll.Evaluator do
        ) do
     number_of_explosions = count_exploders(rolls, target)
     exploded_rolls = explode(number_of_explosions, target, sides, rolls, context)
-    value = sum(exploded_rolls)
-    description = "#{description} explode on #{target}"
+    value = sum_rolls(exploded_rolls)
+    description = "#{description}!#{target}"
 
     reindex_rolls =
       exploded_rolls
@@ -175,8 +183,10 @@ defmodule Eroll.Evaluator do
       (keep ++ to_drop)
       |> Enum.sort_by(fn {index, _, _} -> index end)
 
-    value = sum(new_rolls)
-    description = "#{description} #{keep_or_drop} #{high_or_low} #{number}"
+    value = sum_rolls(new_rolls)
+    keep_or_drop_description = String.slice(keep_or_drop, 0, 1)
+    high_or_low_description = String.slice(high_or_low, 0, 1)
+    description = "#{description}#{keep_or_drop_description}#{high_or_low_description}#{number}"
 
     %{roll | value: value, rolls: new_rolls, description: description}
   end
@@ -194,7 +204,7 @@ defmodule Eroll.Evaluator do
     successes =
       Enum.count(annotated, fn {_, _, _, success} -> success == "success" end)
 
-    description = "#{description} succeed on #{target} or more"
+    description = "#{description}>#{target}"
 
     %{roll | value: successes, rolls: annotated, description: description}
   end
@@ -212,24 +222,12 @@ defmodule Eroll.Evaluator do
     successes =
       Enum.count(annotated, fn {_, _, _, success} -> success == "success" end)
 
-    description = "#{description} succeed on #{target} or less"
+    description = "#{description}<#{target}"
 
     %{roll | value: successes, rolls: annotated, description: description}
   end
 
-  defp sum(value) do
-    sum(value, [])
-  end
-
-  defp sum(%Evaluator{value: value} = _s, _) do
-    value
-  end
-
-  defp sum(x, _) when is_integer(x) do
-    x
-  end
-
-  defp sum(rolls, _) when is_list(rolls) do
+  defp sum_rolls(rolls) when is_list(rolls) do
     rolls
     |> Enum.filter(fn {_, _, keep} -> keep == "keep" end)
     |> Enum.map(fn {_, value, _} -> value end)
@@ -251,4 +249,5 @@ defmodule Eroll.Evaluator do
   defp value(x) do
     x
   end
+
 end
