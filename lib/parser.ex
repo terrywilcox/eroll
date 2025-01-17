@@ -10,11 +10,11 @@ defmodule Eroll.Parser do
     |> concat(integer(min: 1))
     |> reduce(:int_value)
 
-  # a variable of the form ${[a-zA-Z_]+}
+  # a variable of the form ${[a-zA-Z_-.]+}
   variable =
     ascii_char([?$])
     |> concat(ascii_char([?{]))
-    |> concat(ascii_string([?a..?z, ?A..?Z, ?_], min: 1))
+    |> concat(ascii_string([?a..?z, ?A..?Z, ?_, ?., ?-], min: 1))
     |> concat(ascii_char([?}]))
     |> reduce(:variable)
 

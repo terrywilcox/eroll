@@ -103,6 +103,13 @@ defmodule Eroll.ParserTest do
             String.length(roll)} == Eroll.Parser.math_expr(roll)
   end
 
+  test "parse a roll with an extended variable" do
+    roll = "(2d12+${attributes.ed_test-thing})"
+
+    assert {:ok, [{"add", [{"roll", [2, 12]}, {"variable", ["attributes.ed_test-thing"]}]}], "", %{}, {1, 0},
+            String.length(roll)} == Eroll.Parser.math_expr(roll)
+  end
+
   test "parse a roll with variable number of dice and sides" do
     roll = "${dice}d${sides}"
 
