@@ -122,6 +122,19 @@ defmodule ErollTest do
   end
 
   @tag roll_list: [1, 5, 1, 4, 1, 6]
+  test "evaluate a roll with variables and macro", context do
+    roll = "?{dice_macro}!${explode_target}kh${keep_number}>${target_number}"
+
+    new_context =
+      Map.merge(
+        %{"explode_target" => 1, "keep_number" => 3, "target_number" => 5, "dice_macro" => "3d6"},
+        context
+      )
+
+    assert 2 == Eroll.roll(roll, new_context)
+  end
+
+  @tag roll_list: [1, 5, 1, 4, 1, 6]
   test "debug an exploding roll keep with target with variables", context do
     roll = "3d6!${explode_target}kh${keep_number}>${target_number}"
 

@@ -4,7 +4,8 @@ defmodule Eroll do
   end
 
   def roll(term, context) do
-    parsed = Eroll.Parser.parse(term)
+    processed = Eroll.Preprocessor.preprocess(term, context)
+    parsed = Eroll.Parser.parse(processed)
     Eroll.Evaluator.evaluate(parsed, context)
   end
 end
