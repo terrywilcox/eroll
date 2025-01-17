@@ -192,7 +192,7 @@ defmodule Eroll.Parser do
       {:ok, result, _, _, _, _} ->
         result
 
-      {:error, _} ->
+      _ ->
         {:error, "parse error"}
     end
   end

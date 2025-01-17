@@ -5,7 +5,9 @@ defmodule Eroll do
 
   def roll(term, context) do
     processed = Eroll.Preprocessor.preprocess(term, context)
-    parsed = Eroll.Parser.parse(processed)
-    Eroll.Evaluator.evaluate(parsed, context)
+    case Eroll.Parser.parse(processed) do
+      {:error, _} -> processed
+      parsed -> Eroll.Evaluator.evaluate(parsed, context)
+    end
   end
 end

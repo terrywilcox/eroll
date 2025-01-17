@@ -16,7 +16,7 @@ defmodule Eroll.PreprocessorTest do
 
   test "preprocess a single macro with lookup function" do
     context = %{"macro" => "kl1"}
-    lookup_function = fn(name) -> Map.get(context, name, name) end
+    lookup_function = fn name -> Map.get(context, name, name) end
 
     roll = "3d6?{macro}"
 
@@ -32,11 +32,27 @@ defmodule Eroll.PreprocessorTest do
 
   test "preprocess multiple macros with lookup function" do
     context = %{"macro" => "kl1", "other_macro" => ">3"}
-    lookup_function = fn(name) -> Map.get(context, name, name) end
+    lookup_function = fn name -> Map.get(context, name, name) end
 
     roll = "3d6?{macro}?{other_macro}"
 
-    assert "3d6kl1>3" == Eroll.Preprocessor.preprocess(roll, %{"macro_function" => lookup_function})
+    assert "3d6kl1>3" ==
+             Eroll.Preprocessor.preprocess(roll, %{"macro_function" => lookup_function})
   end
 
+  test "preprocess inline roll" do
+    inline_function = fn _inline -> "3" end
+    roll = "my dog has [[d4]] legs"
+
+    assert "my dog has 3 legs" ==
+             Eroll.Preprocessor.preprocess(roll, %{"inline_function" => inline_function})
+  end
+
+  test "preprocess multiple inline rolls" do
+    inline_function = fn _inline -> "3" end
+    roll = "my [[d6]] dogs have [[3d4]] legs"
+
+    assert "my 3 dogs have 3 legs" ==
+             Eroll.Preprocessor.preprocess(roll, %{"inline_function" => inline_function})
+  end
 end

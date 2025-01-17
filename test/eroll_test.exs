@@ -154,4 +154,28 @@ defmodule ErollTest do
               {6, 6, "keep", "success"}
             ]} == Eroll.roll(roll, new_context)
   end
+
+  @tag roll_list: [3]
+  test "evaluate an inline roll", context do
+    roll = "my dog has [[d4]] legs"
+
+    assert "my dog has 3 legs" == Eroll.roll(roll, context)
+  end
+
+  @tag roll_list: [3, 1]
+  test "evaluate an inline roll with multiple inlines", context do
+    roll = "my dog has [[d4]] legs and [[d2]] eyes"
+
+    assert "my dog has 3 legs and 1 eyes" == Eroll.roll(roll, context)
+  end
+
+  @tag roll_list: [3, 1]
+  test "evaluate an inline roll with multiple inlines and macros", context do
+    roll = "my ?{pet} has ?{four} legs and [[d2]] eyes"
+
+    new_context = Map.merge(%{"pet" => "dog", "four" => "[[d4]]"}, context)
+
+    assert "my dog has 3 legs and 1 eyes" == Eroll.roll(roll, new_context)
+  end
+
 end
