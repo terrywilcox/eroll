@@ -36,15 +36,21 @@ defmodule Eroll.Evaluator do
     }
   end
 
+  defp eval({"explode", [roll, above_or_below, target]}, context) do
+    rolls = eval(roll, context)
+    target_number = value(eval(target, context))
+    explode(rolls, target_number, above_or_below, context)
+  end
+
   defp eval({"explode", [roll, target]}, context) do
     rolls = eval(roll, context)
     target_number = value(eval(target, context))
-    explode(rolls, target_number, context)
+    explode(rolls, target_number, "equal", context)
   end
 
   defp eval({"explode", roll}, context) do
     %Evaluator{dice_sides: dice_sides} = rolls = eval(roll, context)
-    explode(rolls, dice_sides, context)
+    explode(rolls, dice_sides, "equal", context)
   end
 
   defp eval({cmd, [roll, h_or_l, n]}, context) when cmd == "keep" or cmd == "drop" do
@@ -87,7 +93,7 @@ defmodule Eroll.Evaluator do
   end
 
   defp eval({"variable", [v]}, context) do
-    lookup_function = Map.get(context, "lookup_function", fn(v) -> Map.get(context, v, v) end)
+    lookup_function = Map.get(context, "lookup_function", fn v -> Map.get(context, v, v) end)
     value = lookup_function.(v)
     %Evaluator{value: value, rolls: value}
   end
@@ -120,17 +126,26 @@ defmodule Eroll.Evaluator do
     for index <- 1..number_of_dice, do: {index, random(dice_sides, context), "keep"}
   end
 
-  defp count_exploders(rolls, target) do
+  defp count_exploders(rolls, target, "equal") do
     Enum.count(rolls, fn {_, value, keep} -> value == target and keep == "keep" end)
+  end
+
+  defp count_exploders(rolls, target, "gte") do
+    Enum.count(rolls, fn {_, value, keep} -> value >= target and keep == "keep" end)
+  end
+
+  defp count_exploders(rolls, target, "lte") do
+    Enum.count(rolls, fn {_, value, keep} -> value <= target and keep == "keep" end)
   end
 
   defp explode(
          %Evaluator{rolls: rolls, dice_sides: sides} = roll,
          target,
+         comparison,
          context
        ) do
-    number_of_explosions = count_exploders(rolls, target)
-    exploded_rolls = explode(number_of_explosions, target, sides, rolls, context)
+    number_of_explosions = count_exploders(rolls, target, comparison)
+    exploded_rolls = explode(number_of_explosions, target, comparison, sides, rolls, context)
     value = sum_rolls(exploded_rolls)
 
     reindex_rolls =
@@ -141,14 +156,14 @@ defmodule Eroll.Evaluator do
     %{roll | value: value, rolls: reindex_rolls}
   end
 
-  defp explode(0, _target, _sides, acc, _context) do
+  defp explode(0, _target, _sides, _comparison, acc, _context) do
     acc
   end
 
-  defp explode(number_of_explosions, target, sides, acc, context) do
+  defp explode(number_of_explosions, target, comparison, sides, acc, context) do
     rolls_from_explosions = roll_dice(number_of_explosions, sides, context)
-    number_exploders = count_exploders(rolls_from_explosions, target)
-    explode(number_exploders, target, sides, acc ++ rolls_from_explosions, context)
+    number_exploders = count_exploders(rolls_from_explosions, target, comparison)
+    explode(number_exploders, target, comparison, sides, acc ++ rolls_from_explosions, context)
   end
 
   defp keep(

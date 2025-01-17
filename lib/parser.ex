@@ -62,11 +62,18 @@ defmodule Eroll.Parser do
       |> reduce(:group)
     )
 
+  explode_gte = ascii_char([?>]) |> replace("gte")
+  explode_lte = ascii_char([?<]) |> replace("lte")
+
+  explode_target =
+    optional([explode_gte, explode_lte] |> choice())
+    |> concat(roll_value)
+
   explode =
     optional(
       ascii_char([?!])
       |> replace("explode")
-      |> concat(optional(roll_value))
+      |> concat(optional(explode_target))
       |> reduce(:group)
     )
 

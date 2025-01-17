@@ -28,6 +28,18 @@ defmodule ErollTest do
     assert 27 == Eroll.roll(roll, context)
   end
 
+  @tag roll_list: [3, 5, 2, 9, 1, 8, 4]
+  test "evaluate a roll with exploding above a number", context do
+    roll = "5d10!>8"
+    assert 32 == Eroll.roll(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 6, 9, 7, 1, 4]
+  test "evaluate a roll with exploding below a number", context do
+    roll = "5d10!<3"
+    assert 35 == Eroll.roll(roll, context)
+  end
+
   @tag roll_list: [3, 5, 2, 9, 1]
   test "evaluate a roll with keep", context do
     roll = "5d10kh3"

@@ -29,6 +29,18 @@ defmodule Eroll.EvaluateTest do
     assert 27 == Eroll.Evaluator.evaluate(roll, context)
   end
 
+  @tag roll_list: [3, 5, 2, 9, 1, 8, 4]
+  test "evaluate a roll with exploding above a number", context do
+    roll = [{"explode", [{"roll", [5, 10]}, "gte", 8]}]
+    assert 32 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 7, 9, 4, 2, 4]
+  test "evaluate a roll with exploding below a number", context do
+    roll = [{"explode", [{"roll", [5, 10]}, "lte", 3]}]
+    assert 34 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
   @tag roll_list: [3, 5, 2, 9, 1]
   test "evaluate a roll with keep", context do
     roll = [{"keep", [{"roll", [5, 10]}, "highest", 3]}]
