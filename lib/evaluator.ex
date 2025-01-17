@@ -60,11 +60,25 @@ defmodule Eroll.Evaluator do
   end
 
   defp eval({cmd, [roll, n]}, context) when (is_integer(n) and cmd == "keep") or cmd == "drop" do
-    eval({cmd, [roll, "highest", n]}, context)
+    high_or_low = case cmd do
+      "keep" -> "highest"
+      "drop" -> "lowest"
+    end
+
+    eval({cmd, [roll, high_or_low, n]}, context)
   end
 
-  defp eval({cmd, [roll, a]}, context) when cmd == "keep" or cmd == "drop" do
-    eval({cmd, [roll, a, 1]}, context)
+  defp eval({cmd, [roll, high_or_low]}, context) when cmd == "keep" or cmd == "drop" do
+    eval({cmd, [roll, high_or_low, 1]}, context)
+  end
+
+  defp eval({cmd, [roll]}, context) when cmd == "keep" or cmd == "drop" do
+    high_or_low = case cmd do
+      "keep" -> "highest"
+      "drop" -> "lowest"
+    end
+
+    eval({cmd, [roll, high_or_low, 1]}, context)
   end
 
   defp eval({cmd, [roll]}, context) when cmd == "keep" or cmd == "drop" do

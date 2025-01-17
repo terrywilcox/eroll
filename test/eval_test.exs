@@ -48,6 +48,36 @@ defmodule Eroll.EvaluateTest do
   end
 
   @tag roll_list: [3, 5, 2, 9, 1]
+  test "evaluate a roll with keep no number", context do
+    roll = [{"keep", [{"roll", [5, 10]}, "lowest"]}]
+    assert 1 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 2, 9, 1]
+  test "evaluate a roll with just keep number", context do
+    roll = [{"keep", [{"roll", [5, 10]}, 3]}]
+    assert 17 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 2, 9, 1]
+  test "evaluate a roll with just keep", context do
+    roll = [{"keep", [{"roll", [5, 10]}]}]
+    assert 9 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 2, 9, 1]
+  test "evaluate a roll with just drop", context do
+    roll = [{"drop", [{"roll", [5, 10]}]}]
+    assert 19 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 2, 9, 1]
+  test "evaluate a roll with just drop number", context do
+    roll = [{"drop", [{"roll", [5, 10]}, 3]}]
+    assert 14 == Eroll.Evaluator.evaluate(roll, context)
+  end
+
+  @tag roll_list: [3, 5, 2, 9, 1]
   test "evaluate a roll with keep more than all", context do
     roll = [{"keep", [{"roll", [5, 10]}, "highest", 8]}]
     assert 20 == Eroll.Evaluator.evaluate(roll, context)
