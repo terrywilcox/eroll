@@ -10,6 +10,7 @@ defmodule ErollTest do
   end
 
   @tag roll_list: [3, 5, 2]
+  @tag :focus
   test "evaluate a simple roll", context do
     roll = "3d6"
     assert 10 == Eroll.roll(roll, context)
@@ -112,8 +113,32 @@ defmodule ErollTest do
     roll = "3d6!${explode_target}kh${keep_number}>${target_number}"
 
     new_context =
-      Map.merge(%{"explode_target" => 1, "keep_number" => 3, "target_number" => 5}, context)
+      Map.merge(
+        %{"explode_target" => 1, "keep_number" => 3, "target_number" => 5, :debug => 1},
+        context
+      )
 
     assert 2 == Eroll.roll(roll, new_context)
+  end
+
+  @tag roll_list: [1, 5, 1, 4, 1, 6]
+  test "debug an exploding roll keep with target with variables", context do
+    roll = "3d6!${explode_target}kh${keep_number}>${target_number}"
+
+    new_context =
+      Map.merge(
+        %{"explode_target" => 1, "keep_number" => 3, "target_number" => 5, "debug" => 1},
+        context
+      )
+
+    assert {2,
+            [
+              {1, 1, "drop", "failure"},
+              {2, 5, "keep", "success"},
+              {3, 1, "drop", "failure"},
+              {4, 4, "keep", "failure"},
+              {5, 1, "drop", "failure"},
+              {6, 6, "keep", "success"}
+            ]} == Eroll.roll(roll, new_context)
   end
 end

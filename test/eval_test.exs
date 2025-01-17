@@ -66,6 +66,7 @@ defmodule Eroll.EvaluateTest do
   end
 
   @tag roll_list: [3, 5]
+  @tag :focus
   test "evaluate a roll with addition", context do
     roll = [{"add", [{"roll", [2, 12]}, {"integer", [1]}]}]
     assert 9 == Eroll.Evaluator.evaluate(roll, context)
