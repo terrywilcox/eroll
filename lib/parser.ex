@@ -8,7 +8,7 @@ defmodule Eroll.Parser do
   signed_integer =
     optional(ascii_char([?-]))
     |> concat(integer(min: 1))
-    |> reduce(:int_value)
+    |> reduce(:integer_value)
 
   # a variable of the form ${[a-zA-Z_-.]+}
   variable =
@@ -126,31 +126,33 @@ defmodule Eroll.Parser do
   lparen = ascii_char([?(]) |> label("(")
   rparen = ascii_char([?)]) |> label(")")
 
+  bracket_term = ignore(lparen) |> parsec(:expr) |> ignore(rparen)
+
   defcombinatorp(
-    :math_expr_factor,
+    :primary,
     ws
-    |> concat([ignore(lparen) |> parsec(:math_expr) |> ignore(rparen), roll, const] |> choice())
+    |> concat([bracket_term, roll, const] |> choice())
     |> concat(ws)
   )
 
   defparsecp(
-    :math_expr_term,
-    parsec(:math_expr_factor)
+    :term,
+    parsec(:primary)
     |> repeat(
       [multiply, divide]
       |> choice()
-      |> parsec(:math_expr_factor)
+      |> parsec(:primary)
     )
     |> reduce(:fold_infixl)
   )
 
   defparsec(
-    :math_expr,
-    parsec(:math_expr_term)
+    :expr,
+    parsec(:term)
     |> repeat(
       [add, subtract]
       |> choice()
-      |> parsec(:math_expr_term)
+      |> parsec(:term)
     )
     |> reduce(:fold_infixl)
   )
@@ -159,15 +161,15 @@ defmodule Eroll.Parser do
     {"variable", [name]}
   end
 
-  defp int_value([?-, value]) when is_integer(value) do
+  defp integer_value([?-, value]) when is_integer(value) do
     {"integer", [-value]}
   end
 
-  defp int_value([_, value]) do
+  defp integer_value([_, value]) do
     {"integer", [value]}
   end
 
-  defp int_value([value]) do
+  defp integer_value([value]) do
     {"integer", [value]}
   end
 
@@ -212,7 +214,7 @@ defmodule Eroll.Parser do
   defparsec(:roll, roll, debug: true)
 
   def parse(roll) do
-    case math_expr(roll) do
+    case expr(roll) do
       {:ok, result, _, _, _, _} ->
         result
 
