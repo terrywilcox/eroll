@@ -96,32 +96,41 @@ defmodule Eroll.Parser do
     |> concat(target_number)
     |> reduce(:postfix)
 
+  ws = optional(ignore(ascii_char([?\s, ?\t]) |> times(min: 1)))
+
   # operators
   add =
-    ascii_char([?+])
+    ws
+    |> ascii_char([?+])
+    |> concat(ws)
     |> replace("add")
 
   subtract =
-    ascii_char([?-])
+    ws
+    |> ascii_char([?-])
+    |> concat(ws)
     |> replace("subtract")
 
   multiply =
-    ascii_char([?*])
+    ws
+    |> ascii_char([?*])
+    |> concat(ws)
     |> replace("multiply")
 
   divide =
-    ascii_char([?/])
+    ws
+    |> ascii_char([?/])
+    |> concat(ws)
     |> replace("divide")
 
   lparen = ascii_char([?(]) |> label("(")
   rparen = ascii_char([?)]) |> label(")")
-  whitespace = ascii_char([?\s, ?\t]) |> times(min: 1)
 
   defcombinatorp(
     :math_expr_factor,
-    optional(ignore(whitespace))
+    ws
     |> concat([ignore(lparen) |> parsec(:math_expr) |> ignore(rparen), roll, const] |> choice())
-    |> concat(optional(ignore(whitespace)))
+    |> concat(ws)
   )
 
   defparsecp(
