@@ -2,10 +2,10 @@ defmodule Eroll.Parser do
   import NimbleParsec
 
   # any positive integer
-  pos_int = integer(min: 1)
+  unsigned_integer = integer(min: 1)
 
   # any integer
-  int =
+  signed_integer =
     optional(ascii_char([?-]))
     |> concat(integer(min: 1))
     |> reduce(:int_value)
@@ -19,10 +19,10 @@ defmodule Eroll.Parser do
     |> reduce(:variable)
 
   # numbers or variables?
-  const = [variable, int] |> choice()
+  const = [variable, signed_integer] |> choice()
 
   # roll values are positive integers or variables
-  roll_value = [variable, pos_int] |> choice()
+  roll_value = [variable, unsigned_integer] |> choice()
 
   roll_d =
     ascii_char([?d, ?D])
@@ -148,6 +148,14 @@ defmodule Eroll.Parser do
 
   defp variable([?$, ?{, name, ?}]) do
     {"variable", [name]}
+  end
+
+  defp int_value([?-, value]) when is_integer(value) do
+    {"integer", [-value]}
+  end
+
+  defp int_value([_, value]) do
+    {"integer", [value]}
   end
 
   defp int_value([value]) do
