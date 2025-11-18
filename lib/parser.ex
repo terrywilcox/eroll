@@ -2,13 +2,13 @@ defmodule Eroll.Parser do
   import NimbleParsec
 
   # any positive integer
-  pos_int = integer(min: 1)
+  unsigned_integer = integer(min: 1)
 
   # any integer
-  int =
+  signed_integer =
     optional(ascii_char([?-]))
     |> concat(integer(min: 1))
-    |> reduce(:int_value)
+    |> reduce(:integer_value)
 
   # a variable of the form ${[a-zA-Z_-.]+}
   variable =
@@ -19,10 +19,10 @@ defmodule Eroll.Parser do
     |> reduce(:variable)
 
   # numbers or variables?
-  const = [variable, int] |> choice()
+  const = [variable, signed_integer] |> choice()
 
   # roll values are positive integers or variables
-  roll_value = [variable, pos_int] |> choice()
+  roll_value = [variable, unsigned_integer] |> choice()
 
   roll_d =
     ascii_char([?d, ?D])
@@ -96,52 +96,63 @@ defmodule Eroll.Parser do
     |> concat(target_number)
     |> reduce(:postfix)
 
+  ws = optional(ignore(ascii_char([?\s, ?\t]) |> times(min: 1)))
+
   # operators
   add =
-    ascii_char([?+])
+    ws
+    |> ascii_char([?+])
+    |> concat(ws)
     |> replace("add")
 
   subtract =
-    ascii_char([?-])
+    ws
+    |> ascii_char([?-])
+    |> concat(ws)
     |> replace("subtract")
 
   multiply =
-    ascii_char([?*])
+    ws
+    |> ascii_char([?*])
+    |> concat(ws)
     |> replace("multiply")
 
   divide =
-    ascii_char([?/])
+    ws
+    |> ascii_char([?/])
+    |> concat(ws)
     |> replace("divide")
 
   lparen = ascii_char([?(]) |> label("(")
   rparen = ascii_char([?)]) |> label(")")
-  whitespace = ascii_char([?\s, ?\t]) |> times(min: 1)
+
+  bracket_term = ignore(lparen) |> parsec(:expr) |> ignore(rparen)
 
   defcombinatorp(
-    :math_expr_factor,
-    optional(ignore(whitespace))
-    |> concat([ignore(lparen) |> parsec(:math_expr) |> ignore(rparen), roll, const] |> choice())
-    |> concat(optional(ignore(whitespace)))
+    :primary,
+    ws
+    |> concat([bracket_term, roll, const] |> choice())
+    |> concat(ws)
   )
 
   defparsecp(
-    :math_expr_term,
-    parsec(:math_expr_factor)
+    :term,
+    parsec(:primary)
     |> repeat(
       [multiply, divide]
       |> choice()
-      |> parsec(:math_expr_factor)
+      |> parsec(:primary)
     )
     |> reduce(:fold_infixl)
   )
 
   defparsec(
-    :math_expr,
-    parsec(:math_expr_term)
+    :expr,
+    parsec(:term)
     |> repeat(
       [add, subtract]
       |> choice()
-      |> parsec(:math_expr_term)
+      |> parsec(:term)
     )
     |> reduce(:fold_infixl)
   )
@@ -150,7 +161,15 @@ defmodule Eroll.Parser do
     {"variable", [name]}
   end
 
-  defp int_value([value]) do
+  defp integer_value([?-, value]) when is_integer(value) do
+    {"integer", [-value]}
+  end
+
+  defp integer_value([_, value]) do
+    {"integer", [value]}
+  end
+
+  defp integer_value([value]) do
     {"integer", [value]}
   end
 
@@ -192,10 +211,8 @@ defmodule Eroll.Parser do
     postfix(more, {cmd, [acc]})
   end
 
-  defparsec(:roll, roll, debug: true)
-
   def parse(roll) do
-    case math_expr(roll) do
+    case expr(roll) do
       {:ok, result, _, _, _, _} ->
         result
 
