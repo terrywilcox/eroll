@@ -211,8 +211,6 @@ defmodule Eroll.Parser do
     postfix(more, {cmd, [acc]})
   end
 
-  defparsec(:roll, roll, debug: true)
-
   def parse(roll) do
     case expr(roll) do
       {:ok, result, _, _, _, _} ->
