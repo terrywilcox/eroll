@@ -1,6 +1,55 @@
 defmodule Eroll.ParserTest do
   use ExUnit.Case
 
+  test "parse a number" do
+    roll = "36"
+
+    assert {:ok, [{"integer", [36]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
+  test "parse a negative number" do
+    roll = "-36"
+
+    assert {:ok, [{"integer", [-36]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
+  test "parse addition" do
+    roll = "3 + 6"
+
+    assert {:ok, [{"add", [{"integer", [3]}, {"integer", [6]}]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
+  test "parse multiplication" do
+    roll = "3 * 6"
+
+    assert {:ok, [{"multiply", [{"integer", [3]}, {"integer", [6]}]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
+  test "parse addition in brackets" do
+    roll = "(3 + 6)"
+
+    assert {:ok, [{"add", [{"integer", [3]}, {"integer", [6]}]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
+  test "parse multiplication in brackets" do
+    roll = "(3 * 6)"
+
+    assert {:ok, [{"multiply", [{"integer", [3]}, {"integer", [6]}]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
+  test "parse order of operations multiply before add" do
+    roll = "3 + 6 * 5"
+
+    assert {:ok, [{"add", [{"integer", [3]}, {"multiply", [{"integer", [6]}, {"integer", [5]}]}]}], "", %{}, {1, 0}, String.length(roll)} ==
+             Eroll.Parser.expr(roll)
+  end
+
   test "parse a simple roll" do
     roll = "3d6"
 
